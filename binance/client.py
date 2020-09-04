@@ -97,20 +97,13 @@ class Client(object):
 
         self.API_KEY = api_key
         self.API_SECRET = api_secret
-        self.session = self._init_session()
         self._requests_params = requests_params
-        self.response = None
+        self.headers = {'Accept': 'application/json',
+                        'User-Agent': 'binance/python',
+                        'X-MBX-APIKEY': self.API_KEY}
 
         # init DNS and SSL cert
         self.ping()
-
-    def _init_session(self):
-
-        session = requests.session()
-        session.headers.update({'Accept': 'application/json',
-                                'User-Agent': 'binance/python',
-                                'X-MBX-APIKEY': self.API_KEY})
-        return session
 
     def _create_api_uri(self, path, signed=True, version=PUBLIC_API_VERSION):
         v = self.PRIVATE_API_VERSION if signed else version
@@ -193,8 +186,8 @@ class Client(object):
             kwargs['params'] = '&'.join('%s=%s' % (data[0], data[1]) for data in kwargs['data'])
             del(kwargs['data'])
 
-        self.response = getattr(self.session, method)(uri, **kwargs)
-        return self._handle_response()
+        response = getattr(requests, method)(uri, headers=self.headers, **kwargs)
+        return self._handle_response(response)
 
     def _request_api(self, method, path, signed=False, version=PUBLIC_API_VERSION, **kwargs):
         uri = self._create_api_uri(path, signed, version)
@@ -221,17 +214,17 @@ class Client(object):
 
         return self._request(method, uri, signed, True, **kwargs)
 
-    def _handle_response(self):
+    def _handle_response(self, response):
         """Internal helper for handling API responses from the Binance server.
         Raises the appropriate exceptions when necessary; otherwise, returns the
         response.
         """
-        if not str(self.response.status_code).startswith('2'):
-            raise BinanceAPIException(self.response)
+        if not str(response.status_code).startswith('2'):
+            raise BinanceAPIException(response)
         try:
-            return self.response.json()
+            return response.json()
         except ValueError:
-            raise BinanceRequestException('Invalid Response: %s' % self.response.text)
+            raise BinanceRequestException('Invalid Response: %s' % response.text)
 
     def _get(self, path, signed=False, version=PUBLIC_API_VERSION, **kwargs):
         return self._request_api('get', path, signed, version, **kwargs)
