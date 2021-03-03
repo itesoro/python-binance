@@ -9,7 +9,7 @@ from .helpers import date_to_milliseconds, interval_to_milliseconds
 from .exceptions import BinanceAPIException, BinanceRequestException, BinanceWithdrawException
 
 
-class Client(object):
+class Client:
 
     API_URL = 'https://api.binance.{}/api'
     WITHDRAW_API_URL = 'https://api.binance.{}/wapi'
@@ -2767,6 +2767,9 @@ class Client(object):
 
         """
         return self._request_margin_api('delete', 'margin/order', signed=True, data=params)
+
+    def cancel_margin_open_orders(self, **params):
+        return self._request_margin_api('delete', 'margin/openOrders', signed=True, data=params)
 
     def get_margin_loan_details(self, **params):
         """Query loan record
